@@ -1,0 +1,21 @@
+--pinout--
+
+PORTA:
+0:slot down
+1:stop
+2:trimmer
+
+PORTB:
+0:heater
+1:slot lock
+2:debug led
+
+CONNECTOR:
+standard ISP header
+2: VCC
+3: i2c SDA 
+4: i2c SCL
+6: GND
+
+--notes--
+trimmer is logarithmic :(
