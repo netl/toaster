@@ -1,7 +1,8 @@
 --pinout--
+mcu:Attiny84
 
 PORTA:
-0:slot down
+0:slot up
 1:stop
 2:trimmer
 
@@ -19,3 +20,4 @@ standard ISP header
 
 --notes--
 trimmer is logarithmic :(
+WARNING: in case of the mcu getting stuck in a loop the heater might be left on causing a fire. An electronical safety switch should be installed.
