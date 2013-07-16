@@ -1,11 +1,27 @@
+#define F_CPU 1000000	//frequency for _delay_ms()
+
 #include <avr/io.h>
+#include <util/delay.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define true 1
+#define false 0
+
+int slot();	//tell if the slot is up
+int button();	//read the state of the front button
+int trimmer();	//read the trimmer and return it's value
+void heater(uint8_t state);	//set the heater on/off
+void hold(uint8_t state);	//hold the slot down
+void debug(uint8_t state);	//set the state of the debug LED
 
 int main(void)
 {
 	//set outputs
 	DDRB=0xff;	//all out for now
 	PORTB=0b000;	//all output low
-	//make sure heater is OFF
+
+	//make sure heater is OFF and the slot is not held down
 	heater(0);
 
 	//set inputs
@@ -14,29 +30,72 @@ int main(void)
 
 	//setup adc for trimmer
 	ADMUX=(1<<MUX1); //set PA2 for adc
-	ADCSRB=(1<<ADLAR);
-	ADCSRA=(1<<ADEN)|(1<<ADSC)|(1<<ADATE);
+	ADCSRB=(1<<ADLAR);	//set for reading of highest bits
+	ADCSRA=(1<<ADEN)|(1<<ADSC)|(1<<ADATE);	//start free run mode
 	//setup i2c
 
-	while(1); //be stuck forever.
+	int time,a;
+
+	while(1) //be stuck forever.
+	{
+		time=trimmer();
+		if(!slot())
+		{
+			hold(1);
+			debug(1);
+			while(button());
+			hold(0);
+			debug(0);
+		}
+		debug(3);
+		for(a=0;a<time;a++)
+		{
+			_delay_ms(1);
+		}
+	}
+}
+
+int slot()	//tell if the slot is up
+{
+	int status=PINA&0b1;
+	return(status);
+}
+
+int button()	//read the state of the front button
+{
+	int state=(PINA>>1)&0b1;
+	return(state);
 }
 
 int trimmer()	//read the trimmer and return it's value
 {
 	int pwr=ADCH;
+	pwr=256-pwr;
 	return(pwr);
-}
-
-int slot()	//tell if the slot is up
-{
-	int status=PORTA&0b1;
-	return(status);
 }
 
 void heater(uint8_t state)	//set the heater on/off
 {				//WARNING: FIRE HAZARD!!!  
-	if(state==TRUE) 
-		PORTA|=0b1;	//set heater pin high 
+	if(state==true) 
+		PORTB|=0b1;	//set heater pin high 
 	else 
-		PORTA&=0xfe;	//set heater pin low
+		PORTB&=~0b10;	//set heater pin low
+}
+
+void hold(uint8_t state)	//hold the slot down
+{
+	if(state==true)
+		PORTB|=0b10;	//hold slot down
+	else
+		PORTB&=~0b10;	//do not hold slot down
+}
+
+void debug(uint8_t state)	//set the state of the debug LED
+{
+	if(state==1)
+		PORTB|=0b100;	//on
+	else if (state==0)
+		PORTB&=~0b100;	//off
+	else
+		PORTB=(PORTB&~0b100)|(~PORTB&0b100);	//toggle
 }
