@@ -32,8 +32,14 @@ int main(void)
 	ADMUX=(1<<MUX1); //set PA2 for adc
 	ADCSRB=(1<<ADLAR);	//set for reading of highest bits
 	ADCSRA=(1<<ADEN)|(1<<ADSC)|(1<<ADATE);	//start free run mode
-	//setup i2c
 
+	//setup i2c slave
+//	DDRA&=~1010000; //no pull-ups on SDA & SCL
+//	USICR=(1<<USIWM1)|(1<<USICS1)|(1<<USISIE)|(1<<USISOIE); //two wire and clock on rising edge
+
+	sei();//enable interrupt
+
+	//end of setup
 	int time,a;
 
 	while(1) //be stuck forever.
