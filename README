@@ -5,6 +5,8 @@ PORTA:
 0:slot up
 1:stop
 2:trimmer
+4:SCL
+6:SDA
 
 PORTB:
 0:heater

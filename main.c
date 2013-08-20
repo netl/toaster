@@ -34,8 +34,11 @@ int main(void)
 	ADCSRA=(1<<ADEN)|(1<<ADSC)|(1<<ADATE);	//start free run mode
 
 	//setup i2c slave
-//	DDRA&=~1010000; //no pull-ups on SDA & SCL
-//	USICR=(1<<USIWM1)|(1<<USICS1)|(1<<USISIE)|(1<<USISOIE); //two wire and clock on rising edge
+	USICR=(1<<USIWM1)|(1<<USICS1)|(1<<USISIE)|(1<<USIOIE); //two wire and clock on rising edge
+	USISR&=~0b1111;	//clear oveflow counter
+	USISR|=8;	//8, so it will overflow after 8 clock cycles
+	DDRA&=~0b1010000; //input on SDA & SCL
+	PORTA&=~0b1010000;	//no pull-up since they're external
 
 	sei();//enable interrupt
 
@@ -104,4 +107,14 @@ void debug(uint8_t state)	//set the state of the debug LED
 		PORTB&=~0b100;	//off
 	else
 		PORTB=(PORTB&~0b100)|(~PORTB&0b100);	//toggle
+}
+
+SIGNAL(USI_STR)
+{
+	//prep registers for i2c
+}
+
+SIGNAL(USI_OVF_vect)	//i2c clock counter overflow
+{
+	int data=USIBR;
 }
