@@ -4,6 +4,7 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include <math.h>
+#include <avr/interrupt.h>
 
 #define true 1
 #define false 0
@@ -14,6 +15,11 @@ int trimmer();	//read the trimmer and return it's value
 void heater(uint8_t state);	//set the heater on/off
 void hold(uint8_t state);	//hold the slot down
 void debug(uint8_t state);	//set the state of the debug LED
+
+volatile uint8_t data=0b00000000;
+//             ||Heater clock (bits 5:0)
+//             |hold slot (bit 6)
+//             debug led (bit 7)
 
 int main(void)
 {
@@ -33,13 +39,10 @@ int main(void)
 	ADCSRB=(1<<ADLAR);	//set for reading of highest bits
 	ADCSRA=(1<<ADEN)|(1<<ADSC)|(1<<ADATE);	//start free run mode
 
-	//setup i2c slave
-	USICR=(1<<USIWM1)|(1<<USICS1)|(1<<USISIE)|(1<<USIOIE); //two wire and clock on rising edge
-	USISR&=~0b1111;	//clear oveflow counter
-	USISR|=8;	//8, so it will overflow after 8 clock cycles
-	DDRA&=~0b1010000; //input on SDA & SCL
-	PORTA&=~0b1010000;	//no pull-up since they're external
-
+	//setup SPI slave
+	DDRA|=(1<<5);
+	USICR = (1<<USIWM0)|(1<<USICS1)|(1<<USIOIE);
+	USISR = (1<<USICNT0);
 	sei();//enable interrupt
 
 	//end of setup
@@ -47,19 +50,14 @@ int main(void)
 
 	while(1) //be stuck forever.
 	{
-		time=trimmer();
-		if(!slot())
+		
+		time=data&0b111111;
+		if(!slot()&&((data>>6)&0b1))     //hold the toast down if allowed
 		{
-			hold(1);
-			debug(1);
-			while(button());
-			hold(0);
-			debug(0);
-		}
-		debug(3);
-		for(a=0;a<time;a++)
-		{
-			_delay_ms(1);
+		       hold(1);
+		       while(button());        //wait for user input
+		       hold(0);
+		       while(!button());       //wait untill button is released
 		}
 	}
 }
@@ -79,7 +77,7 @@ int button()	//read the state of the front button
 int trimmer()	//read the trimmer and return it's value
 {
 	int pwr=ADCH;
-	pwr=256-pwr;
+	pwr=255-pwr;
 	return(pwr);
 }
 
@@ -109,12 +107,10 @@ void debug(uint8_t state)	//set the state of the debug LED
 		PORTB=(PORTB&~0b100)|(~PORTB&0b100);	//toggle
 }
 
-SIGNAL(USI_STR)
+SIGNAL(USI_OVF_vect)
 {
-	//prep registers for i2c
-}
-
-SIGNAL(USI_OVF_vect)	//i2c clock counter overflow
-{
-	int data=USIBR;
+	data = USIBR;
+	debug(data>>7);
+	USIBR=trimmer();
+	USISR=(1<<USIOIF)|(1<<USICNT0);	//clear interrupt and set counter
 }
