@@ -50,14 +50,15 @@ int main(void)
 
 	while(1) //be stuck forever.
 	{
-		
-		time=data&0b111111;
-		if(!slot()&&((data>>6)&0b1))     //hold the toast down if allowed
+		//time=data&0b111111;
+		if(!slot()/*&&((data>>6)&0b1)*/)     //hold the toast down if allowed
 		{
-		       hold(1);
-		       while(button());        //wait for user input
-		       hold(0);
-		       while(!button());       //wait untill button is released
+		      	hold(1);
+			debug(1);
+		      	while(button());        //wait for user input
+		      	hold(0);
+			debug(0);
+			while(!button());       //wait untill button is released
 		}
 	}
 }
