@@ -53,8 +53,6 @@ int main(void)
 		//time=data&0b111111;
 		if(!slot()/*&&((data>>6)&0b1)*/)     //hold the toast down if allowed
 		{
-		      	hold(1);
-			debug(1);
 		      	while(button());        //wait for user input
 		      	hold(0);
 			debug(0);
@@ -111,7 +109,7 @@ void debug(uint8_t state)	//set the state of the debug LED
 SIGNAL(USI_OVF_vect)
 {
 	data = USIBR;
-	debug(data>>7);
-	USIBR=trimmer();
+	debug(3);
+	USIDR=trimmer();
 	USISR=(1<<USIOIF)|(1<<USICNT0);	//clear interrupt and set counter
 }
