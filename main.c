@@ -20,6 +20,7 @@ volatile uint8_t data=0b00000000;
 //             ||Heater clock (bits 5:0)
 //             |hold slot (bit 6)
 //             debug led (bit 7)
+volatile uint16_t time=0;
 
 int main(void)
 {
@@ -33,6 +34,12 @@ int main(void)
 	//set inputs
 	DDRA=0x00;	//all in
 	PORTA=0b011;	//no pull-up for the trimmer
+	
+	//setup interupt for counting time
+	TCCR1A=(1<<WGM12); //clear counter on compare match
+	TCCR1B=(1<<CS11)|(1<CS10); //1MHZ/64=15.625kHz
+	OCR1A=15625; //compare match at 1Hz
+	TIMSK1=(1<<OCIE1A); //interupt on compare match a
 
 	//setup adc for trimmer
 	ADMUX=(1<<MUX1); //set PA2 for adc
@@ -46,14 +53,16 @@ int main(void)
 	sei();//enable interrupt
 
 	//end of setup
-	int time,a;
-
 	while(1) //be stuck forever.
 	{
-		//time=data&0b111111;
-		if(!slot()/*&&((data>>6)&0b1)*/)     //hold the toast down if allowed
+		if(!slot())     //hold the toast down
 		{
+			time=trimmer();	//set timer according to knob
+			heater(1);
+			debug(1);
+			hold(1);
 		      	while(button());        //wait for user input
+			heater(0);
 		      	hold(0);
 			debug(0);
 			while(!button());       //wait untill button is released
@@ -104,6 +113,17 @@ void debug(uint8_t state)	//set the state of the debug LED
 		PORTB&=~0b100;	//off
 	else
 		PORTB=(PORTB&~0b100)|(~PORTB&0b100);	//toggle
+}
+
+SIGNAL(TIM1_COMPA_vect)
+{
+	if(time > 0)
+		time --;
+	else
+	{
+		heater(0);
+		debug(0);
+	}
 }
 
 SIGNAL(USI_OVF_vect)
