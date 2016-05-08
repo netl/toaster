@@ -94,7 +94,7 @@ void heater(uint8_t state)	//set the heater on/off
 	if(state==true) 
 		PORTB|=0b1;	//set heater pin high 
 	else 
-		PORTB&=~0b10;	//set heater pin low
+		PORTB&=~0b1;	//set heater pin low
 }
 
 void hold(uint8_t state)	//hold the slot down
